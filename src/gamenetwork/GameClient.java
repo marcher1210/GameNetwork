@@ -6,23 +6,27 @@ package gamenetwork;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  *
  * @author marcher89
  */
 public class GameClient implements Runnable {
-    private PrintWriter out;
-    private BufferedReader in;
+    ConcurrentLinkedQueue<NetworkMessage> queue;
     private final Socket socket;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
     private boolean running;
     
- // Instantiation
+// Instantiation
     
     public GameClient(String address, int port) throws UnknownHostException, IOException {
+        queue = new ConcurrentLinkedQueue<>();
+        running = true;
         socket = new Socket(address, port);
         new Thread(this).start();
     }
@@ -30,54 +34,81 @@ public class GameClient implements Runnable {
 // Status
     
     public String getAddress() {
-        //TODO: Implement
-        throw new NotImplementedException();
+        return socket.getLocalAddress().getHostAddress();
     }
     
     public int getPort() {
-        //TODO: Implement
-        throw new NotImplementedException();
+        return socket.getLocalPort();
     }
     
 // Connection
     
     public void send(NetworkMessage msg) {
-        //TODO: Implement
+        queue.offer(msg);
     }
     
     public void close() {
         //TODO: Implement
+        running = false;
     }
+    
     
 // Implementation
     
-    
     private void scanQueue() {
-        //TODO: Implement
-    }
-    
-    private void checkForNewMessages() {
-        //TODO: Implement
+        NetworkMessage msg;
+        while((msg = queue.poll()) != null) {
+            try {
+                out.writeObject(msg);
+                out.flush();
+            } catch (IOException ex) {
+                //TODO: Error handling
+                ex.printStackTrace();
+            }
+        }
     }
     
     private void messageReceived(NetworkMessage msg) {
-        //TODO: Implement
+        System.out.println("Client: "+msg.getObject().toString());
     }
     
     @Override //From class Runnable
     public void run() {
         try {
-            running = true;
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            
-            
+            out = new ObjectOutputStream(socket.getOutputStream());
+            out.writeObject(new NetworkMessage(NetworkMessageType.FirstConnect, "Hello server"));
+            out.flush();
+            in = new ObjectInputStream(socket.getInputStream());
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    while(running) {
+                        try {
+                            NetworkMessage msg;
+                            while((msg = (NetworkMessage)in.readObject()) != null /*This right?*/) {
+                                messageReceived(msg);
+                            }
+                        } catch (IOException ex) {
+                            //TODO: Error handling
+                            ex.printStackTrace();
+                        } catch (ClassNotFoundException ex) {
+                            //TODO: Error handling
+                            ex.printStackTrace();
+                        } catch (ClassCastException ex) {
+                            //TODO: Error handling
+                            ex.printStackTrace();
+                        }
+                    }
+                }
+            }).start();
             while(running) {
                 scanQueue();
-                checkForNewMessages();
             }
+            // TODO: Close streams'n'stuff
         } catch (IOException ex) {
-            close();
+            //TODO: Error handling
+            ex.printStackTrace();
         }
     }
 }

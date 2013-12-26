@@ -169,9 +169,11 @@ public class GameNetwork {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) throws UnknownHostException, IOException {
+    public static void main(String[] args) throws Exception {
         GameServer server = new GameServer(12345);
+        server.start();
         GameClient client = new GameClient("localhost", 12345);
-        System.out.println("Network done.");
+        Thread.sleep(1000);
+        client.send(new NetworkMessage(NetworkMessageType.GameUpdate, "Hej du!"));
     }
 }

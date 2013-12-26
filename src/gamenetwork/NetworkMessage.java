@@ -4,11 +4,13 @@
  */
 package gamenetwork;
 
+import java.io.Serializable;
+
 /**
  *
  * @author marcher89
  */
-public class NetworkMessage {
+public class NetworkMessage implements Serializable {
     
     public NetworkMessage(NetworkMessageType type, Object object) {
         this.type = type;
