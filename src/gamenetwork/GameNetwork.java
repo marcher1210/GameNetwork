@@ -5,8 +5,8 @@
 package gamenetwork;
 
 import gamenetwork.listeners.*;
-import java.io.IOException;
-import java.net.UnknownHostException;
+import java.io.*;
+import java.net.*;
 import java.util.*;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -17,18 +17,11 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 public class GameNetwork {
 
 // Instance variables
+    AbstractNetworkCommunicator comm;
     
-    private Set<LobbyActivityListener> lobbyActivityListeners;
-    private Set<GameSettingListener> gameSettingListeners;
-    private Set<GameUpdateListener> gameUpdateListeners;
-    private Set<ChatMessageListener> chatMessageListeners;
-    
-// Creation
+// Instatiation
     public GameNetwork() {
-        lobbyActivityListeners = new HashSet<>();
-        gameSettingListeners = new HashSet<>();
-        gameUpdateListeners = new HashSet<>();
-        chatMessageListeners = new HashSet<>();
+        
     }
     
     
@@ -81,35 +74,35 @@ public class GameNetwork {
 // Listeners
     
     public void addLobbyActivityListener(LobbyActivityListener listener) {
-        lobbyActivityListeners.add(listener);
+           comm.addLobbyActivityListener(listener);
     }
     
     public void removeLobbyActivityListener(LobbyActivityListener listener) {
-        lobbyActivityListeners.remove(listener);
+           comm.removeLobbyActivityListener(listener);
     }
     
     public void addGameSettingListener(GameSettingListener listener) {
-        gameSettingListeners.add(listener);
+           comm.addGameSettingListener(listener);
     }
     
     public void removeGameSettingListener(GameSettingListener listener) {
-        gameSettingListeners.remove(listener);
+           comm.removeGameSettingListener(listener);
     }
     
     public void addChatMessageListener(ChatMessageListener listener) {
-        chatMessageListeners.add(listener);
+           comm.addChatMessageListener(listener);
     }
     
     public void removeChatMessageListener(ChatMessageListener listener) {
-        chatMessageListeners.remove(listener);
+           comm.removeChatMessageListener(listener);
     }
     
     public void addGameUpdateListener(GameUpdateListener listener) {
-        gameUpdateListeners.add(listener);
+           comm.addGameUpdateListener(listener);
     }
     
     public void removeGameUpdateListener(GameUpdateListener listener) {
-        gameUpdateListeners.remove(listener);
+           comm.removeGameUpdateListener(listener);
     }
     
     
@@ -170,10 +163,18 @@ public class GameNetwork {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception {
-//        GameServer server = new GameServer(12345);
-//        server.start();
-//        GameClient client = new GameClient("localhost", 12345);
-//        Thread.sleep(1000);
-//        client.send(new NetworkMessage(NetworkMessageType.GameUpdate, "Hej du!"));
+        GameServer server = new GameServer(12345);
+        server.start();
+        GameClient client = new GameClient("localhost", 12345);
+        client.start();
+        Thread.sleep(1000);
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        String input;
+
+        while((input=br.readLine())!=null){
+              client.send(new NetworkMessage(NetworkMessageType.ChatMessage, input));
+        }
+        
     }
 }

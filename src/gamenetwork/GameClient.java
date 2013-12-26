@@ -7,22 +7,28 @@ package gamenetwork;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author marcher89
  */
-public class GameClient extends AbstractNetworkCommunicator implements Runnable {
-    private final Socket socket;
+public class GameClient extends AbstractNetworkCommunicator {
+    private Socket socket;
+    
+    private final String address;
+    private final int port;
+    
     private ObjectInputStream in;
     private ObjectOutputStream out;
     
 // Instantiation
     
-    public GameClient(String address, int port, GameNetwork network) throws UnknownHostException, IOException {
-        super(network);
-        socket = new Socket(address, port);
-        new Thread(this).start();
+    public GameClient(String address, int port) {
+        super();
+        this.address = address;
+        this.port = port;
     }
     
 // Status
@@ -37,13 +43,27 @@ public class GameClient extends AbstractNetworkCommunicator implements Runnable 
     
 // Connection
     
+    
+    
     public void close() {
         //TODO: Implement
-        running = false;
     }
     
     
 // Implementation
+    
+    protected void startProcedure() {
+        try {
+            socket = new Socket(address, port);
+            new Thread(this).start();
+        } catch (UnknownHostException ex) {
+            //TODO: Error handling
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            //TODO: Error handling
+            ex.printStackTrace();
+        }
+    }
     
     protected void realSend(NetworkMessage msg) {
         try {
@@ -70,7 +90,7 @@ public class GameClient extends AbstractNetworkCommunicator implements Runnable 
 
                 @Override
                 public void run() {
-                    while(running) {
+                    while(isRunning()) {
                         try {
                             NetworkMessage msg;
                             while((msg = (NetworkMessage)in.readObject()) != null /*This right?*/) {
@@ -89,7 +109,7 @@ public class GameClient extends AbstractNetworkCommunicator implements Runnable 
                     }
                 }
             }).start();
-            while(running) {
+            while(isRunning()) {
                 scanQueue();
             }
             // TODO: Close streams'n'stuff

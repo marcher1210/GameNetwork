@@ -12,22 +12,76 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author marcher89
  */
-public abstract class AbstractNetworkCommunicator {
+public abstract class AbstractNetworkCommunicator implements Runnable {
     
     protected ConcurrentLinkedQueue<NetworkMessage> queue;
-    protected boolean running;
+    private boolean running;
     
-    protected GameNetwork network;
+    protected Set<LobbyActivityListener> lobbyActivityListeners;
+    protected Set<GameSettingListener> gameSettingListeners;
+    protected Set<GameUpdateListener> gameUpdateListeners;
+    protected Set<ChatMessageListener> chatMessageListeners;
     
-    
-// Instantiation
-    public AbstractNetworkCommunicator(GameNetwork network) {
-        this.network = network;
+// Instatiation
+        
+    public AbstractNetworkCommunicator() {
+        lobbyActivityListeners = new HashSet<>();
+        gameSettingListeners = new HashSet<>();
+        gameUpdateListeners = new HashSet<>();
+        chatMessageListeners = new HashSet<>();
         queue = new ConcurrentLinkedQueue<>();
-        running = true;
+        running = false;
     }
     
+    
+// Status
+    
+    public boolean isRunning() {
+        return running;
+    }
+
+    
+// Listeners
+    
+    public void addLobbyActivityListener(LobbyActivityListener listener) {
+        lobbyActivityListeners.add(listener);
+    }
+    
+    public void removeLobbyActivityListener(LobbyActivityListener listener) {
+        lobbyActivityListeners.remove(listener);
+    }
+    
+    public void addGameSettingListener(GameSettingListener listener) {
+        gameSettingListeners.add(listener);
+    }
+    
+    public void removeGameSettingListener(GameSettingListener listener) {
+        gameSettingListeners.remove(listener);
+    }
+    
+    public void addChatMessageListener(ChatMessageListener listener) {
+        chatMessageListeners.add(listener);
+    }
+    
+    public void removeChatMessageListener(ChatMessageListener listener) {
+        chatMessageListeners.remove(listener);
+    }
+    
+    public void addGameUpdateListener(GameUpdateListener listener) {
+        gameUpdateListeners.add(listener);
+    }
+    
+    public void removeGameUpdateListener(GameUpdateListener listener) {
+        gameUpdateListeners.remove(listener);
+    }
+    
+    
 // Connection
+    
+    public void start() {
+        running = true;
+        startProcedure();
+    }
     
     public void send(NetworkMessage msg) {
         queue.offer(msg);
@@ -43,6 +97,8 @@ public abstract class AbstractNetworkCommunicator {
             realSend(msg);
         }
     }
+    
+    protected abstract void startProcedure();
     
     protected abstract void realSend(NetworkMessage msg);
     

@@ -7,15 +7,19 @@ package gamenetwork;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 ;
 
 /**
  *
  * @author marcher89
  */
-public class GameServer extends AbstractNetworkCommunicator implements Runnable {
+public class GameServer extends AbstractNetworkCommunicator {
     
-    private final int ACCEPT_TIMEOUT = 1000;
+    private final int ACCEPT_TIMEOUT = 250;
+    
+    private final int port;
     
     private ServerSocket server;
     
@@ -23,9 +27,8 @@ public class GameServer extends AbstractNetworkCommunicator implements Runnable 
     
 // Instantiation
      
-    public GameServer(int port, GameNetwork network) throws IOException {
-        super(network);
-        server = new ServerSocket(port);
+    public GameServer(int port) {
+        this.port = port;
         clients = new ArrayList<>();
     }
     
@@ -37,9 +40,6 @@ public class GameServer extends AbstractNetworkCommunicator implements Runnable 
     
 // Connection
     
-    public void start() {
-        new Thread(this).start();
-    }
     
     /**
      * Stops listening for new clients
@@ -53,11 +53,21 @@ public class GameServer extends AbstractNetworkCommunicator implements Runnable 
      */
     public void close() {
         //TODO: Implement
-        running = false;
     }
     
 // Implementation
 
+    
+    protected void startProcedure() {
+        try {
+            server = new ServerSocket(port);
+            new Thread(this).start();
+        } catch (IOException ex) {
+            //TODO: Error handling
+            ex.printStackTrace();
+        }
+    }
+    
     private void acceptNewClient() {
         try {
             server.setSoTimeout(ACCEPT_TIMEOUT);
@@ -74,7 +84,7 @@ public class GameServer extends AbstractNetworkCommunicator implements Runnable 
             ex.printStackTrace();
         } catch (SocketTimeoutException ex) {
             //TODO: Error handling
-            ex.printStackTrace();
+            //This happens almost every time
         } catch (IOException ex) {
             //TODO: Error handling
             ex.printStackTrace();
@@ -99,12 +109,11 @@ public class GameServer extends AbstractNetworkCommunicator implements Runnable 
     
     @Override //From class Runnable
     public void run() {
-        running = true;
         new Thread(new Runnable() {
 
             @Override
             public void run() {
-                while(running) {
+                while(isRunning()) {
                     for (Triplet<Socket, ObjectInputStream, ObjectOutputStream> client : clients) {
                         try {
                             NetworkMessage msg;
@@ -126,7 +135,7 @@ public class GameServer extends AbstractNetworkCommunicator implements Runnable 
                 }
             }
         }).start();
-        while(running) {
+        while(isRunning()) {
             acceptNewClient();
             scanQueue();
         }
