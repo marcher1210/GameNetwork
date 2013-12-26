@@ -7,28 +7,25 @@ package gamenetwork;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 ;
 
 /**
  *
  * @author marcher89
  */
-public class GameServer implements Runnable {
+public class GameServer extends AbstractNetworkCommunicator implements Runnable {
     
     private final int ACCEPT_TIMEOUT = 1000;
     
     private ServerSocket server;
-    private boolean running;
     
-    ConcurrentLinkedQueue<NetworkMessage> queue;
     List<Triplet<Socket, ObjectInputStream, ObjectOutputStream>> clients;
     
 // Instantiation
      
-    public GameServer(int port) throws IOException {
+    public GameServer(int port, GameNetwork network) throws IOException {
+        super(network);
         server = new ServerSocket(port);
-        queue = new ConcurrentLinkedQueue<>();
         clients = new ArrayList<>();
     }
     
@@ -42,10 +39,6 @@ public class GameServer implements Runnable {
     
     public void start() {
         new Thread(this).start();
-    }
-    
-    public void send(NetworkMessage msg) {
-        queue.offer(msg);
     }
     
     /**
@@ -65,13 +58,6 @@ public class GameServer implements Runnable {
     
 // Implementation
 
-    private void scanQueue() {
-        NetworkMessage msg;
-        while((msg = queue.poll()) != null) {
-            broadcast(msg);
-        }
-    }
-    
     private void acceptNewClient() {
         try {
             server.setSoTimeout(ACCEPT_TIMEOUT);
@@ -95,7 +81,7 @@ public class GameServer implements Runnable {
         }
     }
     
-    private void broadcast(NetworkMessage msg) {
+    protected void realSend(NetworkMessage msg) {
         for (Triplet<Socket, ObjectInputStream, ObjectOutputStream> client : clients) {
             try {
                 client.getC().writeObject(msg);
@@ -107,7 +93,7 @@ public class GameServer implements Runnable {
         }
     }
     
-    private void messageReceived(NetworkMessage msg) {
+    protected void messageReceived(NetworkMessage msg) {
         System.out.println("Server: "+msg.getObject().toString());
     }
     

@@ -7,26 +7,20 @@ package gamenetwork;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
  * @author marcher89
  */
-public class GameClient implements Runnable {
-    ConcurrentLinkedQueue<NetworkMessage> queue;
+public class GameClient extends AbstractNetworkCommunicator implements Runnable {
     private final Socket socket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
-    private boolean running;
     
 // Instantiation
     
-    public GameClient(String address, int port) throws UnknownHostException, IOException {
-        queue = new ConcurrentLinkedQueue<>();
-        running = true;
+    public GameClient(String address, int port, GameNetwork network) throws UnknownHostException, IOException {
+        super(network);
         socket = new Socket(address, port);
         new Thread(this).start();
     }
@@ -43,10 +37,6 @@ public class GameClient implements Runnable {
     
 // Connection
     
-    public void send(NetworkMessage msg) {
-        queue.offer(msg);
-    }
-    
     public void close() {
         //TODO: Implement
         running = false;
@@ -55,20 +45,17 @@ public class GameClient implements Runnable {
     
 // Implementation
     
-    private void scanQueue() {
-        NetworkMessage msg;
-        while((msg = queue.poll()) != null) {
-            try {
-                out.writeObject(msg);
-                out.flush();
-            } catch (IOException ex) {
-                //TODO: Error handling
-                ex.printStackTrace();
-            }
+    protected void realSend(NetworkMessage msg) {
+        try {
+            out.writeObject(msg);
+            out.flush();
+        } catch (IOException ex) {
+            //TODO: Error handling
+            ex.printStackTrace();
         }
     }
     
-    private void messageReceived(NetworkMessage msg) {
+    protected void messageReceived(NetworkMessage msg) {
         System.out.println("Client: "+msg.getObject().toString());
     }
     
