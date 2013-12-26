@@ -5,6 +5,8 @@
 package gamenetwork;
 
 import gamenetwork.listeners.*;
+import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.*;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -167,7 +169,9 @@ public class GameNetwork {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        // TODO code application logic here
+    public static void main(String[] args) throws UnknownHostException, IOException {
+        GameServer server = new GameServer(12345);
+        GameClient client = new GameClient("localhost", 12345);
+        System.out.println("Network done.");
     }
 }
