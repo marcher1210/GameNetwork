@@ -8,3 +8,4 @@ manifest.mf
 *.jar
 *.war
 *.ear
+/build/
