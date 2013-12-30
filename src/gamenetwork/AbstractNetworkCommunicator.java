@@ -16,7 +16,9 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
     
     protected ConcurrentLinkedQueue<NetworkMessage> queue;
     private boolean running;
-    
+    protected int clientId = -1;
+    private String clientName;
+
     protected Set<LobbyActivityListener> lobbyActivityListeners;
     protected Set<GameSettingListener> gameSettingListeners;
     protected Set<GameUpdateListener> gameUpdateListeners;
@@ -39,7 +41,21 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
     public boolean isRunning() {
         return running;
     }
+    
+    public int getClientId() {
+        return clientId;
+    }
 
+    public String getClientName() {
+        return clientName;
+    }
+    
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+        if(isRunning())
+            send(new NetworkMessage(NetworkMessageType.ClientNameChanged, clientName));
+    }
+    
     
 // Listeners
     
@@ -84,6 +100,7 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
     }
     
     public void send(NetworkMessage msg) {
+        msg.setSenderId(clientId);
         queue.offer(msg);
     }
     

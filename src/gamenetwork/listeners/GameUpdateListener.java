@@ -9,5 +9,5 @@ package gamenetwork.listeners;
  * @author marcher89
  */
 public interface GameUpdateListener {
-    void GameUpdateReceived(int type, Object object);
+    void gameUpdateReceived(int type, Object object);
 }

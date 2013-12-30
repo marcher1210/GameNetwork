@@ -4,6 +4,8 @@
  */
 package gamenetwork;
 
+import gamenetwork.listeners.*;
+import gamenetwork.util.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -23,13 +25,14 @@ public class GameServer extends AbstractNetworkCommunicator {
     
     private ServerSocket server;
     
-    List<Triplet<Socket, ObjectInputStream, ObjectOutputStream>> clients;
+    HashMap<Integer, ClientInfo> clients;
     
 // Instantiation
      
     public GameServer(int port) {
         this.port = port;
-        clients = new ArrayList<>();
+        this.clientId = 0;
+        clients = new HashMap<>();
     }
     
 // Status
@@ -55,6 +58,11 @@ public class GameServer extends AbstractNetworkCommunicator {
         //TODO: Implement
     }
     
+// Internal Helper methods
+   private int getFreeClientId() {
+       return 1;
+   }
+    
 // Implementation
 
     
@@ -73,11 +81,13 @@ public class GameServer extends AbstractNetworkCommunicator {
             server.setSoTimeout(ACCEPT_TIMEOUT);
             Socket soc = server.accept();
             ObjectOutputStream out = new ObjectOutputStream(soc.getOutputStream());
-            out.writeObject(new NetworkMessage(NetworkMessageType.FirstConnect, "Hello server"));
-            out.flush();
             ObjectInputStream in = new ObjectInputStream(soc.getInputStream());
             
-            clients.add(new Triplet(soc, in, out));
+            int newId = getFreeClientId();
+            clients.put(newId, new ClientInfo(newId, soc, in, out));
+            
+            out.writeObject(new NetworkMessage(NetworkMessageType.YourClientId, newId));
+            out.flush();
             //TODO: Notify listener
         } catch (SocketException ex) {
             //TODO: Error handling
@@ -92,19 +102,15 @@ public class GameServer extends AbstractNetworkCommunicator {
     }
     
     protected void realSend(NetworkMessage msg) {
-        for (Triplet<Socket, ObjectInputStream, ObjectOutputStream> client : clients) {
+        for (ClientInfo client : clients.values()) {
             try {
-                client.getC().writeObject(msg);
-                client.getC().flush();
+                client.getOut().writeObject(msg);
+                client.getOut().flush();
             } catch (IOException ex) {
                 // TODO: Error handling
                 ex.printStackTrace();
             }
         }
-    }
-    
-    protected void messageReceived(NetworkMessage msg) {
-        System.out.println("Server: "+msg.getObject().toString());
     }
     
     @Override //From class Runnable
@@ -114,12 +120,11 @@ public class GameServer extends AbstractNetworkCommunicator {
             @Override
             public void run() {
                 while(isRunning()) {
-                    for (Triplet<Socket, ObjectInputStream, ObjectOutputStream> client : clients) {
+                    for (ClientInfo client : clients.values()) {
                         try {
                             NetworkMessage msg;
-                            while((msg = (NetworkMessage)client.getB().readObject()) != null /*This right?*/) {
+                            while((msg = (NetworkMessage)client.getIn().readObject()) != null /*This right?*/) {
                                 messageReceived(msg);
-                                send(msg);
                             }
                         } catch (IOException ex) {
                             //TODO: Error handling
@@ -140,20 +145,77 @@ public class GameServer extends AbstractNetworkCommunicator {
             scanQueue();
         }
     }
+    
+    protected void messageReceived(NetworkMessage msg) {
+        switch(msg.getType()){
+            case FirstConnect:
+                // Ignore
+                break; 
+            case YourClientId:
+                assert false : "Server received YourClientId from client "+msg.getSenderId();
+                break;
+            case ConnectedClients:
+                assert false : "Server received ConnectedClients from client "+msg.getSenderId();
+                break;
+            case ClientConnected:
+                assert false : "Server received ClientConnected from client "+msg.getSenderId();
+                break; 
+            case ClientDisconnected:
+                assert false : "Server received ClientDisconnected from client "+msg.getSenderId();
+                break; 
+            case ClientNameChanged:
+                clients.get(msg.getSenderId()).setName((String)msg.getObject());
+                realSend(msg);
+                for (LobbyActivityListener l : lobbyActivityListeners) {
+                    l.clientNameChanged(msg.getSenderId(), (String) msg.getObject());
+                }
+                break; 
+            case GameSetting:
+                {
+                    Tuple<Integer, Object> t = (Tuple<Integer, Object>) msg.getObject();
+                    realSend(msg);
+                    for (GameSettingListener l : gameSettingListeners) {
+                        l.gameSettingChanged(t.first, t.second);
+                    }
+                }
+                break; 
+            case GameUpdate:
+                {
+                    Tuple<Integer, Object> t = (Tuple<Integer, Object>) msg.getObject();
+                    realSend(msg);
+                    for (GameUpdateListener l : gameUpdateListeners) {
+                        l.gameUpdateReceived(t.first, t.second);
+                    }
+                }
+                break; 
+            case ChatMessage:
+                realSend(msg);
+                for (ChatMessageListener l : chatMessageListeners) {
+                    l.chatMessageReceived(msg.getSenderId(), (String) msg.getObject());
+                }
+                break;
+        }
+    }
 
-    private static class Triplet<T, U, V> {
-        T a;
-        U b;
-        V c;
+    private static class ClientInfo {
+        int id;
+        String name;
+        Socket socket;
+        ObjectInputStream in;
+        ObjectOutputStream out;
 
-        Triplet(T a, U b, V c) {
-            this.a = a;
-            this.b = b;
-            this.c = c;
+        ClientInfo(int id, Socket socket, ObjectInputStream in, ObjectOutputStream out) {
+            this.id = id;
+            this.socket = socket;
+            this.in = in;
+            this.out = out;
         }
 
-        T getA(){ return a;}
-        U getB(){ return b;}
-        V getC(){ return c;}
+        int getId() { return id; }
+        String getName() { return name; }
+        void setName(String name) { this.name = name; }
+        Socket getSocket(){ return socket; }
+        ObjectInputStream getIn(){ return in; }
+        ObjectOutputStream getOut(){ return out; }
     }
 }

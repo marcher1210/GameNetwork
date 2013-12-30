@@ -17,6 +17,14 @@ public class NetworkMessage implements Serializable {
         this.object = object;
     }
     
+    public int getSenderId() {
+        return senderId;
+    }
+    
+    public void setSenderId(int senderId) {
+        this.senderId = senderId;
+    }
+    
     public NetworkMessageType getType() {
         return type;
     }
@@ -25,6 +33,7 @@ public class NetworkMessage implements Serializable {
         return object;
     }
     
+    private int senderId;
     private NetworkMessageType type;
     private Object object;
     

@@ -9,4 +9,13 @@ package gamenetwork;
  * @author marcher89
  */
 public enum NetworkMessageType {
-    ClientConnected, ClientDisconnected, ClientNameChanged, GameSetting, GameUpdate, FirstConnect, ChatMessage}
+    FirstConnect, 
+    YourClientId,
+    ConnectedClients,
+    ClientConnected, 
+    ClientDisconnected, 
+    ClientNameChanged, 
+    GameSetting, 
+    GameUpdate, 
+    ChatMessage
+}

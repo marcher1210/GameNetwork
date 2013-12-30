@@ -4,6 +4,8 @@
  */
 package gamenetwork;
 
+import gamenetwork.listeners.*;
+import gamenetwork.util.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -75,15 +77,11 @@ public class GameClient extends AbstractNetworkCommunicator {
         }
     }
     
-    protected void messageReceived(NetworkMessage msg) {
-        System.out.println("Client: "+msg.getObject().toString());
-    }
-    
     @Override //From class Runnable
     public void run() {
         try {
             out = new ObjectOutputStream(socket.getOutputStream());
-            out.writeObject(new NetworkMessage(NetworkMessageType.FirstConnect, "Hello server"));
+            out.writeObject(new NetworkMessage(NetworkMessageType.FirstConnect, ""));
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
             new Thread(new Runnable() {
@@ -116,6 +114,61 @@ public class GameClient extends AbstractNetworkCommunicator {
         } catch (IOException ex) {
             //TODO: Error handling
             ex.printStackTrace();
+        }
+    }
+    
+    protected void messageReceived(NetworkMessage msg) {
+        switch(msg.getType()){
+            case FirstConnect:
+                assert false : "Client got FirstConnect from server";
+                break; 
+            case YourClientId:
+                clientId = (int) msg.getObject();
+                break;
+            case ConnectedClients:
+                break;
+            case ClientConnected:
+                {
+                    Tuple<Integer, String> t = (Tuple<Integer, String>) msg.getObject();
+                    for (LobbyActivityListener l : lobbyActivityListeners) {
+                        l.clientConnected(t.first, t.second);
+                    }
+                }
+                break; 
+            case ClientDisconnected:
+                for (LobbyActivityListener l : lobbyActivityListeners) {
+                    l.clientDisconnected((int) msg.getObject());
+                }
+                break; 
+            case ClientNameChanged:
+                {
+                    Tuple<Integer, String> t = (Tuple<Integer, String>) msg.getObject();
+                    for (LobbyActivityListener l : lobbyActivityListeners) {
+                        l.clientNameChanged(t.first, t.second);
+                    }
+                }
+                break; 
+            case GameSetting:
+                {
+                    Tuple<Integer, Object> t = (Tuple<Integer, Object>) msg.getObject();
+                    for (GameSettingListener l : gameSettingListeners) {
+                        l.gameSettingChanged(t.first, t.second);
+                    }
+                }
+                break; 
+            case GameUpdate:
+                {
+                    Tuple<Integer, Object> t = (Tuple<Integer, Object>) msg.getObject();
+                    for (GameUpdateListener l : gameUpdateListeners) {
+                        l.gameUpdateReceived(t.first, t.second);
+                    }
+                }
+                break; 
+            case ChatMessage:
+                for (ChatMessageListener l : chatMessageListeners) {
+                    l.chatMessageReceived(msg.getSenderId(), (String) msg.getObject());
+                }
+                break;
         }
     }
 }

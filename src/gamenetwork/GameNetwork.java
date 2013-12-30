@@ -5,6 +5,7 @@
 package gamenetwork;
 
 import gamenetwork.listeners.*;
+import gamenetwork.util.Tuple;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -170,11 +171,20 @@ public class GameNetwork {
         Thread.sleep(1000);
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
+        client.send(new NetworkMessage(NetworkMessageType.GameUpdate, new Tuple<>(42, null)));
+        
+        client.addChatMessageListener(new ChatMessageListener() {
+
+            @Override
+            public void chatMessageReceived(int senderId, String message) {
+                System.out.println("Chat message from "+senderId+":"+message);
+            }
+        });
+        
         String input;
 
         while((input=br.readLine())!=null){
               client.send(new NetworkMessage(NetworkMessageType.ChatMessage, input));
         }
-        
     }
 }
