@@ -9,5 +9,5 @@ package gamenetwork.listeners;
  * @author marcher89
  */
 public interface ChatMessageListener {
-    
+    void chatMessageReceived(int senderId, String message);
 }

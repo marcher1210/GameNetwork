@@ -9,5 +9,5 @@ package gamenetwork.listeners;
  * @author marcher89
  */
 public interface GameSettingListener {
-    
+    void gameSettingChanged(int type, Object object);
 }

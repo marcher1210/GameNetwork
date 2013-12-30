@@ -9,5 +9,11 @@ package gamenetwork.listeners;
  * @author marcher89
  */
 public interface LobbyActivityListener {
-    
+
+
+    void clientConnected(int clientId, String clientName);
+
+    void clientNameChanged(int clientId, String newClientName);
+
+    void clientDisconnected(int clientId);
 }
