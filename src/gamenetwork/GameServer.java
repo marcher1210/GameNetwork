@@ -60,12 +60,25 @@ public class GameServer extends AbstractNetworkCommunicator {
     
 // Internal Helper methods
    private int getFreeClientId() {
-       return 1;
+       int returnVal = 1;
+       while(clients.containsKey(returnVal))
+           returnVal++;
+       assert !clients.containsKey(returnVal) : "The client id is not unique";
+       return returnVal;
    }
+   
+   private List<Tuple<Integer, String>> getConnectedClients() {
+       List<Tuple<Integer, String>> connectedClients = new ArrayList<>();
+       connectedClients.add(new Tuple<>(0, getClientName()));
+       for (Map.Entry<Integer, ClientInfo> entry : clients.entrySet()) {
+           connectedClients.add(new Tuple<>(entry.getKey(), entry.getValue().getName()));
+       }
+       return connectedClients;
+   }
+   
     
 // Implementation
 
-    
     protected void startProcedure() {
         try {
             server = new ServerSocket(port);
@@ -84,11 +97,22 @@ public class GameServer extends AbstractNetworkCommunicator {
             ObjectInputStream in = new ObjectInputStream(soc.getInputStream());
             
             int newId = getFreeClientId();
-            clients.put(newId, new ClientInfo(newId, soc, in, out));
+            String newName = "Player "+newId;
+            ClientInfo newClient = new ClientInfo(newId, soc, in, out);
+            newClient.setName(newName);
             
             out.writeObject(new NetworkMessage(NetworkMessageType.YourClientId, newId));
             out.flush();
-            //TODO: Notify listener
+            
+            out.writeObject(new NetworkMessage(NetworkMessageType.ConnectedClients, getConnectedClients()));
+            out.flush();
+            
+            realSend(new NetworkMessage(NetworkMessageType.ClientConnected, new Tuple<>(newId, newName)));
+            for (LobbyActivityListener l : lobbyActivityListeners) {
+                l.clientConnected(newId, newName);
+            }
+            clients.put(newId, newClient);
+            //TODO: Notify listener and other clients
         } catch (SocketException ex) {
             //TODO: Error handling
             ex.printStackTrace();
@@ -164,10 +188,13 @@ public class GameServer extends AbstractNetworkCommunicator {
                 assert false : "Server received ClientDisconnected from client "+msg.getSenderId();
                 break; 
             case ClientNameChanged:
-                clients.get(msg.getSenderId()).setName((String)msg.getObject());
-                realSend(msg);
-                for (LobbyActivityListener l : lobbyActivityListeners) {
-                    l.clientNameChanged(msg.getSenderId(), (String) msg.getObject());
+                {
+                    Tuple<Integer, String> t = (Tuple<Integer, String>) msg.getObject();
+                    clients.get(t.first).setName(t.second);
+                    realSend(msg);
+                    for (LobbyActivityListener l : lobbyActivityListeners) {
+                        l.clientNameChanged(t.first, t.second);
+                    }
                 }
                 break; 
             case GameSetting:

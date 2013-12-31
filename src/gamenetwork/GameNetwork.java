@@ -165,14 +165,10 @@ public class GameNetwork {
      */
     public static void main(String[] args) throws Exception {
         GameServer server = new GameServer(12345);
+        server.setClientName("Overlord");
         server.start();
         GameClient client = new GameClient("localhost", 12345);
-        client.start();
-        Thread.sleep(1000);
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-
-        client.send(new NetworkMessage(NetworkMessageType.GameUpdate, new Tuple<>(42, null)));
-        
+        client.setClientName("Faithful client");
         client.addChatMessageListener(new ChatMessageListener() {
 
             @Override
@@ -180,6 +176,34 @@ public class GameNetwork {
                 System.out.println("Chat message from "+senderId+":"+message);
             }
         });
+        server.addLobbyActivityListener(new LobbyActivityListener() {
+
+            @Override
+            public void clientConnected(int clientId, String clientName) {
+                System.out.println("New client connected: id="+clientId+", name="+clientName);
+            }
+
+            @Override
+            public void clientNameChanged(int clientId, String newClientName) {
+                System.out.println("Client changed name: id="+clientId+", new name="+newClientName);
+            }
+
+            @Override
+            public void clientDisconnected(int clientId) {
+                System.out.println("Client disconnected: id="+clientId);
+            }
+        });
+        client.start();
+        Thread.sleep(1000);
+        new GameClient("localhost", 12345).start();
+        Thread.sleep(1000);
+        new GameClient("localhost", 12345).start();
+        Thread.sleep(1000);
+        new GameClient("localhost", 12345).start();
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+        client.send(new NetworkMessage(NetworkMessageType.GameUpdate, new Tuple<>(42, null)));
+        
         
         String input;
 

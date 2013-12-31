@@ -81,7 +81,7 @@ public class GameClient extends AbstractNetworkCommunicator {
     public void run() {
         try {
             out = new ObjectOutputStream(socket.getOutputStream());
-            out.writeObject(new NetworkMessage(NetworkMessageType.FirstConnect, ""));
+            out.writeObject(new NetworkMessage(NetworkMessageType.FirstConnect, getClientName()));
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
             new Thread(new Runnable() {
@@ -124,8 +124,12 @@ public class GameClient extends AbstractNetworkCommunicator {
                 break; 
             case YourClientId:
                 clientId = (int) msg.getObject();
+                send(new NetworkMessage(NetworkMessageType.ClientNameChanged, new Tuple<>(getClientId(), getClientName())));
                 break;
             case ConnectedClients:
+                for (Tuple<Integer, String> c : (List<Tuple<Integer, String>>) msg.getObject()) {
+                    System.out.println("Connected client: id="+c.first+", name="+c.second);
+                }
                 break;
             case ClientConnected:
                 {
