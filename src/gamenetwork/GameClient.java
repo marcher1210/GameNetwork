@@ -11,6 +11,7 @@ import java.net.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  *
@@ -49,6 +50,7 @@ public class GameClient extends AbstractNetworkCommunicator {
     
     public void close() {
         //TODO: Implement
+        throw new NotImplementedException();
     }
     
     
