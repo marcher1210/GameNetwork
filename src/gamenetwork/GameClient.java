@@ -9,8 +9,7 @@ import gamenetwork.util.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Map.Entry;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
@@ -26,12 +25,15 @@ public class GameClient extends AbstractNetworkCommunicator {
     private ObjectInputStream in;
     private ObjectOutputStream out;
     
+    private Map<Integer, String> connectedClients;
+    
 // Instantiation
     
     public GameClient(String address, int port) {
         super();
         this.address = address;
         this.port = port;
+        connectedClients = new HashMap<>();
     }
     
 // Status
@@ -42,6 +44,10 @@ public class GameClient extends AbstractNetworkCommunicator {
     
     public int getPort() {
         return socket.getLocalPort();
+    }
+    
+    public Map<Integer, String> getConnectedClients(){
+        return connectedClients;
     }
     
 // Connection
@@ -129,19 +135,22 @@ public class GameClient extends AbstractNetworkCommunicator {
                 send(new NetworkMessage(NetworkMessageType.ClientNameChanged, new Tuple<>(getClientId(), getClientName())));
                 break;
             case ConnectedClients:
-                for (Tuple<Integer, String> c : (List<Tuple<Integer, String>>) msg.getObject()) {
-                    System.out.println("Connected client: id="+c.first+", name="+c.second);
+                connectedClients = (Map<Integer, String>) msg.getObject();
+                for (Entry<Integer, String> c : ((Map<Integer, String>) msg.getObject()).entrySet()) {
+                    System.out.println("Connected client: id="+c.getKey()+", name="+c.getValue());
                 }
                 break;
             case ClientConnected:
                 {
                     Tuple<Integer, String> t = (Tuple<Integer, String>) msg.getObject();
+                    connectedClients.put(t.first, t.second);
                     for (LobbyActivityListener l : lobbyActivityListeners) {
                         l.clientConnected(t.first, t.second);
                     }
                 }
                 break; 
             case ClientDisconnected:
+                connectedClients.remove((int) msg.getObject());
                 for (LobbyActivityListener l : lobbyActivityListeners) {
                     l.clientDisconnected((int) msg.getObject());
                 }
@@ -149,6 +158,7 @@ public class GameClient extends AbstractNetworkCommunicator {
             case ClientNameChanged:
                 {
                     Tuple<Integer, String> t = (Tuple<Integer, String>) msg.getObject();
+                    connectedClients.put(t.first, t.second);
                     for (LobbyActivityListener l : lobbyActivityListeners) {
                         l.clientNameChanged(t.first, t.second);
                     }

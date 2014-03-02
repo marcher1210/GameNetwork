@@ -56,6 +56,7 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
             send(new NetworkMessage(NetworkMessageType.ClientNameChanged, clientName));
     }
     
+    public abstract Map<Integer, String> getConnectedClients();
     
 // Listeners
     

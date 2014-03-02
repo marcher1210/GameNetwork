@@ -70,11 +70,11 @@ public class GameServer extends AbstractNetworkCommunicator {
        return returnVal;
    }
    
-   private List<Tuple<Integer, String>> getConnectedClients() {
-       List<Tuple<Integer, String>> connectedClients = new ArrayList<>();
-       connectedClients.add(new Tuple<>(0, getClientName()));
+   public Map<Integer, String> getConnectedClients() {
+       Map<Integer, String> connectedClients = new HashMap<>();
+       connectedClients.put(0, getClientName());
        for (Map.Entry<Integer, ClientInfo> entry : clients.entrySet()) {
-           connectedClients.add(new Tuple<>(entry.getKey(), entry.getValue().getName()));
+           connectedClients.put(entry.getKey(), entry.getValue().getName());
        }
        return connectedClients;
    }

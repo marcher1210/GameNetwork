@@ -215,8 +215,8 @@ public class GameNetwork {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
         client.send(new NetworkMessage(NetworkMessageType.GameUpdate, new Tuple<>(42, null)));
-
-
+        
+        
         String input;
 
         while ((input = br.readLine()) != null) {
