@@ -139,7 +139,7 @@ public class GameNetwork {
     public void changeClientName(int id, String newName) {
         assert isStarted() && isHost() || id == myClientId();
         assert connectedClients().containsKey(id) : "Invalid client id";
-        throw new NotImplementedException(); //TODO: Implement 
+        comm.send(new NetworkMessage(NetworkMessageType.ClientNameChanged, new Tuple<>(id, newName)));
    }
 
     public void changeClientName(String newName) {
@@ -149,32 +149,34 @@ public class GameNetwork {
     }
 
     public void changeGameSetting(int type, Object object) {
-        assert isHost();
+        assert isStarted() && isHost();
+        comm.send(new NetworkMessage(NetworkMessageType.GameSetting, new Tuple<>(type, object)));
         throw new NotImplementedException(); //TODO: Implement
     }
 
     public void kickClient(int id) {
-        assert isHost();
+        assert isStarted() && isHost();
         assert id != myClientId() : "You can't kick youself, mkay?!";
         assert connectedClients().containsKey(id) : "Invalid client id";
-        throw new NotImplementedException(); //TODO: Implement
+        ((GameServer) comm).removeClient(id);
+        comm.send(new NetworkMessage(NetworkMessageType.ClientDisconnected, id));
     }
 
     public void startGame() {
-        assert isHost();
+        assert isStarted() && isHost();
         throw new NotImplementedException(); //TODO: Implement
     }
 
 // Game functionality
     public void sendGameUpdate(int type, Object object) {
         assert isStarted();
-        throw new NotImplementedException(); //TODO: Implement
+        comm.send(new NetworkMessage(NetworkMessageType.GameUpdate, new Tuple<>(type, object)));
     }
 
 // Chat messages
     public void sendChatMessage(String msg) {
         assert isStarted();
-        throw new NotImplementedException(); //TODO: Implement
+        comm.send(new NetworkMessage(NetworkMessageType.ChatMessage, msg));
     }
 
     /**

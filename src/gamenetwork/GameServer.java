@@ -43,7 +43,10 @@ public class GameServer extends AbstractNetworkCommunicator {
     }
     
 // Connection
-    
+    public void removeClient(int i) {
+        closeConnection(clients.get(i));
+        clients.remove(i);
+    }
     
     /**
      * Stops listening for new clients
@@ -143,11 +146,6 @@ public class GameServer extends AbstractNetworkCommunicator {
             //TODO: Error handling
             ex.printStackTrace();
         }
-    }
-
-    private void removeClient(int i) {
-        closeConnection(clients.get(i));
-        clients.remove(i);
     }
     
     @Override //From class Runnable
