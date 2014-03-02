@@ -23,24 +23,31 @@ public class GameNetwork {
     AbstractNetworkCommunicator comm;
 
 // Instatiation
-    public GameNetwork() {
+    
+    /**
+     * Create an instance of GameNetwork, prepared for joining a server.
+     * Add the necessary listeners, (change the client name), and use {@link #startConnection()} to try to connect to the server.
+     * @param host The IP address to join
+     * @param port The port number to join
+     */
+    public GameNetwork(String host, int port) {
+        comm = new GameClient(host, port);
+        comm.setClientName("Client");
     }
-
-// Connection
-    public void prepareHostGame(int port) {
-        assert !isStarted();
+    
+    /**
+     * Create an instance of GameNetwork, prepared for hosting a game.
+     * Add the necessary listeners, (change the client name), and use {@link #startConnection()} to start listening for new connections.
+     * @param port The port number on which to listen for incoming connections
+     */
+    public GameNetwork(int port) {
         comm = new GameServer(port);
         comm.setClientName("Server");
     }
 
-    public void prepareJoinGame(String host, int port) {
-        assert !isStarted();
-        comm = new GameClient(host, port);
-        comm.setClientName("Client");
-    }
-
+// Connection
     public void startConnection() {
-        assert !isStarted() && isPrepared();
+        assert !isStarted();
         comm.start();
     }
 
@@ -50,16 +57,11 @@ public class GameNetwork {
     }
 
 // Status
-    public boolean isPrepared() {
-        return comm != null;
-    }
-
     public boolean isStarted() {
         return comm != null && comm.isRunning();
     }
 
     public boolean isHost() {
-        assert isPrepared();
         return comm instanceof GameServer;
     }
 
@@ -135,55 +137,62 @@ public class GameNetwork {
 
 //Lobby activity
     public void changeClientName(int id, String newName) {
-        assert isHost() || id == myClientId();
+        assert isStarted() && isHost() || id == myClientId();
         assert connectedClients().containsKey(id) : "Invalid client id";
-        throw new NotImplementedException();
-    }
+        throw new NotImplementedException(); //TODO: Implement 
+   }
 
     public void changeClientName(String newName) {
-        assert isStarted();
-        changeClientName(myClientId(), newName);
+        comm.setClientName(newName);
+        if(isStarted())
+            changeClientName(myClientId(), newName);
     }
 
     public void changeGameSetting(int type, Object object) {
         assert isHost();
-        throw new NotImplementedException();
+        throw new NotImplementedException(); //TODO: Implement
     }
 
     public void kickClient(int id) {
         assert isHost();
         assert id != myClientId() : "You can't kick youself, mkay?!";
         assert connectedClients().containsKey(id) : "Invalid client id";
-        throw new NotImplementedException();
+        throw new NotImplementedException(); //TODO: Implement
     }
 
     public void startGame() {
         assert isHost();
-        throw new NotImplementedException();
+        throw new NotImplementedException(); //TODO: Implement
     }
 
 // Game functionality
     public void sendGameUpdate(int type, Object object) {
         assert isStarted();
-        throw new NotImplementedException();
+        throw new NotImplementedException(); //TODO: Implement
     }
 
 // Chat messages
     public void sendChatMessage(String msg) {
         assert isStarted();
-        throw new NotImplementedException();
+        throw new NotImplementedException(); //TODO: Implement
     }
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception {
-        GameServer server = new GameServer(12345);
-        server.setClientName("Overlord");
-        server.start();
-        GameClient client = new GameClient("localhost", 12345);
-        client.setClientName("Faithful client");
-        client.addChatMessageListener(new ChatMessageListener() {
+        GameNetwork server = new GameNetwork(12345),
+                client1 = new GameNetwork("localhost", 12345),
+                client2 = new GameNetwork("localhost", 12345),
+                client3 = new GameNetwork("localhost", 12345);
+        
+        server.changeClientName("Overlord");
+        client1.changeClientName("Client 1");
+        client2.changeClientName("Client 2");
+        client3.changeClientName("Cleint 3");
+
+        
+        client1.addChatMessageListener(new ChatMessageListener() {
             @Override
             public void chatMessageReceived(int senderId, String message) {
                 System.out.println("Chat message from " + senderId + ":" + message);
@@ -205,25 +214,21 @@ public class GameNetwork {
                 System.out.println("Client disconnected: id=" + clientId);
             }
         });
-        client.start();
+        server.startConnection();
         Thread.sleep(1000);
-        new GameClient("localhost", 12345).start();
+        client1.startConnection();
         Thread.sleep(1000);
-        new GameClient("localhost", 12345).start();
+        client2.startConnection();
         Thread.sleep(1000);
-        new GameClient("localhost", 12345).start();
+        client3.startConnection();
+        Thread.sleep(1000);
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
-        client.send(new NetworkMessage(NetworkMessageType.GameUpdate, new Tuple<>(42, null)));
-        
-        
         String input;
 
         while ((input = br.readLine()) != null) {
-            client.send(new NetworkMessage(NetworkMessageType.ChatMessage, input));
+            client1.sendChatMessage(input);
             if(input.equals("exit")) break;
         }
-        client.close();
-        server.close();
     }
 }
