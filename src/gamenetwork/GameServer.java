@@ -52,14 +52,7 @@ public class GameServer extends AbstractNetworkCommunicator {
         //TODO: Implement
         throw new NotImplementedException();
     }
-    
-    /**
-     * Closes the server and all connections to clients
-     */
-    public void close() {
-        //TODO: Implement
-        throw new NotImplementedException();
-    }
+
     
 // Internal Helper methods
    private int getFreeClientId() {
@@ -85,7 +78,9 @@ public class GameServer extends AbstractNetworkCommunicator {
     protected void startProcedure() {
         try {
             server = new ServerSocket(port);
-            new Thread(this).start();
+            Thread t = new Thread(this);
+            runningThreads.add(t);
+            t.start();
         } catch (IOException ex) {
             //TODO: Error handling
             ex.printStackTrace();
@@ -115,7 +110,6 @@ public class GameServer extends AbstractNetworkCommunicator {
                 l.clientConnected(newId, newName);
             }
             clients.put(newId, newClient);
-            //TODO: Notify listener and other clients
         } catch (SocketException ex) {
             //TODO: Error handling
             ex.printStackTrace();
@@ -139,10 +133,26 @@ public class GameServer extends AbstractNetworkCommunicator {
             }
         }
     }
+
+    private void closeConnection(ClientInfo client) {
+        try {
+            client.in.close();
+            client.out.close();
+            client.socket.close();
+        } catch (IOException ex) {
+            //TODO: Error handling
+            ex.printStackTrace();
+        }
+    }
+
+    private void removeClient(int i) {
+        closeConnection(clients.get(i));
+        clients.remove(i);
+    }
     
     @Override //From class Runnable
     public void run() {
-        new Thread(new Runnable() {
+        Thread t = new Thread(new Runnable() {
 
             @Override
             public void run() {
@@ -166,10 +176,22 @@ public class GameServer extends AbstractNetworkCommunicator {
                     }
                 }
             }
-        }).start();
+        });
+        runningThreads.add(t);
+        t.start();
         while(isRunning()) {
             acceptNewClient();
             scanQueue();
+        }
+        try {
+            t.join();
+        } catch (InterruptedException ex) {
+            //TODO: Error handling
+            ex.printStackTrace();
+        }
+        realSend(new NetworkMessage(NetworkMessageType.ClientDisconnected, getClientId()));
+        for (ClientInfo client : clients.values()) {
+            closeConnection(client);
         }
     }
     
@@ -188,7 +210,10 @@ public class GameServer extends AbstractNetworkCommunicator {
                 assert false : "Server received ClientConnected from client "+msg.getSenderId();
                 break; 
             case ClientDisconnected:
-                assert false : "Server received ClientDisconnected from client "+msg.getSenderId();
+                if(msg.getSenderId() != (int) msg.getObject())
+                    assert false : "Server received ClientDisconnected from client "+msg.getSenderId()+" saying client number "+msg.getObject()+" disconnected.";
+                removeClient((int)msg.getObject());
+                realSend(msg);
                 break; 
             case ClientNameChanged:
                 {

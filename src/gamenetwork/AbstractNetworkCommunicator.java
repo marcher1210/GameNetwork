@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public abstract class AbstractNetworkCommunicator implements Runnable {
     
     protected ConcurrentLinkedQueue<NetworkMessage> queue;
-    private boolean running;
+    protected boolean running;
     protected int clientId = -1;
     private String clientName;
 
@@ -23,6 +23,8 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
     protected Set<GameSettingListener> gameSettingListeners;
     protected Set<GameUpdateListener> gameUpdateListeners;
     protected Set<ChatMessageListener> chatMessageListeners;
+    
+    protected Collection<Thread> runningThreads;
     
 // Instatiation
         
@@ -32,6 +34,7 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
         gameUpdateListeners = new HashSet<>();
         chatMessageListeners = new HashSet<>();
         queue = new ConcurrentLinkedQueue<>();
+        runningThreads = new ArrayList<>();
         running = false;
     }
     
@@ -95,17 +98,28 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
     
 // Connection
     
-    public void start() {
+    public final void start() {
         running = true;
         startProcedure();
     }
     
-    public void send(NetworkMessage msg) {
+    public final void send(NetworkMessage msg) {
         msg.setSenderId(clientId);
         queue.offer(msg);
     }
     
-    public abstract void close();
+    public final void close() {
+        send(new NetworkMessage(NetworkMessageType.ClientDisconnected, getClientId()));
+        running = false;
+        for (Thread thread : runningThreads) {
+            try {
+                thread.join();
+            } catch (InterruptedException ex) {
+                //TODO: Error handling
+                ex.printStackTrace();
+            }
+        }
+    }
     
 // Implementation
     

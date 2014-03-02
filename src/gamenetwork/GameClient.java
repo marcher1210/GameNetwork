@@ -10,6 +10,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
@@ -50,22 +52,15 @@ public class GameClient extends AbstractNetworkCommunicator {
         return connectedClients;
     }
     
-// Connection
-    
-    
-    
-    public void close() {
-        //TODO: Implement
-        throw new NotImplementedException();
-    }
-    
-    
+
 // Implementation
     
     protected void startProcedure() {
         try {
             socket = new Socket(address, port);
-            new Thread(this).start();
+            Thread t = new Thread(this);
+            runningThreads.add(t);
+            t.start();
         } catch (UnknownHostException ex) {
             //TODO: Error handling
             ex.printStackTrace();
@@ -84,6 +79,17 @@ public class GameClient extends AbstractNetworkCommunicator {
             ex.printStackTrace();
         }
     }
+
+    private void realClose() {
+        try {
+            in.close();
+            out.close();
+            socket.close();
+        } catch (IOException ex) {
+            //TODO: error handling
+            ex.printStackTrace();
+        }
+    }
     
     @Override //From class Runnable
     public void run() {
@@ -92,7 +98,7 @@ public class GameClient extends AbstractNetworkCommunicator {
             out.writeObject(new NetworkMessage(NetworkMessageType.FirstConnect, getClientName()));
             out.flush();
             in = new ObjectInputStream(socket.getInputStream());
-            new Thread(new Runnable() {
+            Thread t = new Thread(new Runnable() {
 
                 @Override
                 public void run() {
@@ -114,11 +120,19 @@ public class GameClient extends AbstractNetworkCommunicator {
                         }
                     }
                 }
-            }).start();
+            });
+            runningThreads.add(t);
+            t.start();
             while(isRunning()) {
                 scanQueue();
             }
-            // TODO: Close streams'n'stuff
+            try {
+                t.join();
+            } catch (InterruptedException ex) {
+                //TODO: Error handling
+                ex.printStackTrace();
+            }
+            realClose();
         } catch (IOException ex) {
             //TODO: Error handling
             ex.printStackTrace();

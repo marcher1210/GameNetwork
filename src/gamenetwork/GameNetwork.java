@@ -95,9 +95,9 @@ public class GameNetwork {
         return ((GameServer) comm).getPort();
     }
 
-    public HashMap<Integer, String> connectedClients() {
+    public Map<Integer, String> connectedClients() {
         assert isStarted();
-        throw new NotImplementedException();
+        return comm.getConnectedClients();
     }
 
 // Listeners
@@ -221,6 +221,9 @@ public class GameNetwork {
 
         while ((input = br.readLine()) != null) {
             client.send(new NetworkMessage(NetworkMessageType.ChatMessage, input));
+            if(input.equals("exit")) break;
         }
+        client.close();
+        server.close();
     }
 }
