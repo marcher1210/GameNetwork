@@ -90,7 +90,7 @@ public class GameClient extends AbstractNetworkCommunicator {
             ex.printStackTrace();
         }
     }
-    
+
     @Override //From class Runnable
     public void run() {
         try {

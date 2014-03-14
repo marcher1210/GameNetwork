@@ -84,6 +84,14 @@ public class GameServer extends AbstractNetworkCommunicator {
             Thread t = new Thread(this);
             runningThreads.add(t);
             t.start();
+            Thread multicast = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    multicastServerInfoLoop();
+                }
+            });
+            runningThreads.add(multicast);
+            multicast.start();
         } catch (IOException ex) {
             //TODO: Error handling
             ex.printStackTrace();
@@ -146,6 +154,38 @@ public class GameServer extends AbstractNetworkCommunicator {
             //TODO: Error handling
             ex.printStackTrace();
         }
+    }
+    
+    private void multicastServerInfoLoop() {
+        try {
+            try (DatagramSocket multicastSocket = new DatagramSocket()) {
+                while(isRunning()){
+                    try{
+                        byte[] buf = new byte[256];
+                        String multicastString = this.getPort()+";"+this.getClientName();
+                        buf = multicastString.getBytes();
+
+                        InetAddress group = InetAddress.getByName(multicastGroupName);
+                        DatagramPacket packet;
+                        packet = new DatagramPacket(buf, buf.length, group, multicastPort);
+                        multicastSocket.send(packet);
+
+                        try {
+                            Thread.sleep(5000);
+                        } 
+                        catch (InterruptedException e) { }
+                    } catch(IOException ex) {
+                        //TODO: Error handling
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            //TODO: Error handling
+        }
+    }
+    
+    private void multicastServerInfoOnce(){
+        //TODO: Implement
     }
     
     @Override //From class Runnable

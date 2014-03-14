@@ -26,6 +26,9 @@ public abstract class AbstractNetworkCommunicator implements Runnable {
     
     protected Collection<Thread> runningThreads;
     
+    protected static final String multicastGroupName = "225.0.42.0"; //Arbitrary address in the range of reserved IP addresses for multicast assignments.
+    protected static final int multicastPort = 4448;
+    
 // Instatiation
         
     public AbstractNetworkCommunicator() {
